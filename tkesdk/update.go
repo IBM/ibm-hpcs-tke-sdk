@@ -443,6 +443,17 @@ func Update(ci CommonInputs, hc HsmConfig) ([]string, error) {
 		}
 	}
 
+	//--------------------------------------------------------------------------
+	// Update the failover hsms
+	//--------------------------------------------------------------------------
+	if hc.failoverUnits > 0 {
+		// TODO: figure out what the hc.failoverUnits and ci.crypto_instance_id should be. I don't think they're correct
+		err = ep11cmds.RequestHSM(authToken, urlStart, ci.InstanceId, hc.failoverUnits, "failover")
+		if err {
+			return make([]string, 0), errors.New("Failed to provision failover hsms")
+		}
+	}
+
 	return make([]string, 0), nil
 }
 
@@ -540,9 +551,9 @@ func SetDomainAttributes(authToken string, urlStart string,
 
 	// Allow domains to be zeroized with a single signature
 	domainAttributes.Permissions |= 0x00000040
-		// May remove this in the future.  Bank of America was told the
-		// signature threshold value applies.  Should change TKE plug-in
-		// and HPCS Management Utilities at the same time.
+	// May remove this in the future.  Bank of America was told the
+	// signature threshold value applies.  Should change TKE plug-in
+	// and HPCS Management Utilities at the same time.
 
 	// Allow master key import
 	domainAttributes.Permissions |= 0x00000001

@@ -85,6 +85,12 @@ func checkInputs(hc HsmConfig) ([]string, error) {
 	if len(hc.Admins) > 8 {
 		problems = append(problems, "No more than 8 administrators can be specified.")
 	}
+	if hc.FailoverUnits != 0 && (hc.FailoverUnits < 2 || hc.FailoverUnits > 3) {
+		problems = append(problems, "You must have either 2 or 3 Failover Units.")
+	}
+	if hc.FailoverUnits > hc.units) {
+		problems = append(problems, "Cannot have more failover units than operational units")
+	}
 
 	allKeysValid := true
 	for _, admin := range hc.Admins {
@@ -307,6 +313,9 @@ func internalCheckTransition(ci CommonInputs, hc HsmConfig,
 			}
 		}
 	}
+
+	// TODO: need to check that we aren't removing failover hsms
+	// like if newFailover < currentFailover: problem
 
 	return problems, nil, allKeepSKIs, allAddSKIs, allRmvSKIs
 }

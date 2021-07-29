@@ -71,7 +71,7 @@ func CreatePostHsmsRequest(authToken string, urlStart string,
 /* return the public part of a signature key                                  */
 /*----------------------------------------------------------------------------*/
 func CreateGetPublicKeyRequest(sigkeyToken string, urlStart string,
-		sigkey string) *rest.Request {
+	sigkey string) *rest.Request {
 
 	url := urlStart + "/keys/" + sigkey
 	req := rest.GetRequest(url)
@@ -85,7 +85,7 @@ func CreateGetPublicKeyRequest(sigkeyToken string, urlStart string,
 /* sign data using a signature key                                            */
 /*----------------------------------------------------------------------------*/
 func CreateSignDataRequest(sigkeyToken string, urlStart string,
-		sigkey string, dataToSign string) *rest.Request {
+	sigkey string, dataToSign string) *rest.Request {
 
 	url := urlStart + "/sign/" + sigkey
 	req := rest.PostRequest(url)
@@ -93,4 +93,35 @@ func CreateSignDataRequest(sigkeyToken string, urlStart string,
 	req.Set("Authorization", sigkeyToken)
 	req.Body(`{"hash_algorithm":"sha2-512","input":"` + dataToSign + `"}`)
 	return req
+}
+
+/*----------------------------------------------------------------------------*/
+/* Creates the HTTP request for checking backup regions                       */
+/*----------------------------------------------------------------------------*/
+func CreateAssignHsmsHttpRequest(authToken string, urlStart string, crypto_instance_id string, backup_region string, number_of_hsms int, hsm_type string) (*rest.Request, error) {
+
+	url := urlStart + "/v1/tke/" + crypto_instance_id + "/hsmAssignment/" + backup_region + "?type=" + hsm_type
+	req := rest.PostRequest(url)
+	req.Set("Content-type", "application/json")
+	req.Set("Authorization", authToken)
+	req.Body(`{"numberOfHsmsRequested":` + strconv.Itoa(number_of_hsms) + `}`)
+	return req, nil
+}
+
+/*----------------------------------------------------------------------------*/
+/* Creates the HTTP request for checking backup regions                       */
+/*----------------------------------------------------------------------------*/
+func CreateQueryBackupRegionsHttpRequest(context plugin.PluginContext, hsm_type string) (*rest.Request, error) {
+
+	authToken := context.IAMToken()
+
+	urlStart, err := mapAPIEndpoint(context)
+	if err != nil {
+		return nil, err
+	}
+	url := urlStart + "/v1/tke/availableBackupRegions?type=" + hsm_type
+	req := rest.GetRequest(url)
+	req.Set("Content-type", "application/json")
+	req.Set("Authorization", authToken)
+	return req, nil
 }
