@@ -60,6 +60,30 @@ func Update(ci CommonInputs, hc HsmConfig) ([]string, error) {
 		return problems, nil
 	}
 
+	//--------------------------------------------------------------------------
+	// Update the failover hsms
+	//--------------------------------------------------------------------------
+	if hc.FailoverUnits > 0 {
+		// TODO: figure out what the hc.failoverUnits and ci.crypto_instance_id should be. I don't think they're correct
+		success := ep11cmds.RequestHSM(ci.AuthToken, urlStart, ci.InstanceId, hc.FailoverUnits, "failover")
+		if !success {
+			return make([]string, 0), errors.New("Failed to provision failover hsms")
+		}
+		// Read the updated configuration
+		hsminfo, _, domains, err = internalQuery(ci)
+		if err != nil {
+			return make([]string, 0), err
+		}
+		// Check for invalid transitions
+		problems, err, keepSKIs, addSKIs, rmvSKIs = internalCheckTransition(ci, hc, hsminfo)
+		if err != nil {
+			return make([]string, 0), err
+		}
+		if len(problems) > 0 {
+			return problems, nil
+		}
+	}
+
 	// Do a pre-emptive zeroize to work around an undesired consequence of
 	// an EP11 firmware update.
 	anyAdminsRemoved := false
@@ -440,17 +464,6 @@ func Update(ci CommonInputs, hc HsmConfig) ([]string, error) {
 					return make([]string, 0), err
 				}
 			}
-		}
-	}
-
-	//--------------------------------------------------------------------------
-	// Update the failover hsms
-	//--------------------------------------------------------------------------
-	if hc.failoverUnits > 0 {
-		// TODO: figure out what the hc.failoverUnits and ci.crypto_instance_id should be. I don't think they're correct
-		err = ep11cmds.RequestHSM(authToken, urlStart, ci.InstanceId, hc.failoverUnits, "failover")
-		if err {
-			return make([]string, 0), errors.New("Failed to provision failover hsms")
 		}
 	}
 

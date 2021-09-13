@@ -88,9 +88,9 @@ func checkInputs(hc HsmConfig) ([]string, error) {
 	if hc.FailoverUnits != 0 && (hc.FailoverUnits < 2 || hc.FailoverUnits > 3) {
 		problems = append(problems, "You must have either 2 or 3 Failover Units.")
 	}
-	if hc.FailoverUnits > hc.units) {
-		problems = append(problems, "Cannot have more failover units than operational units")
-	}
+	// if hc.FailoverUnits > hc.units {
+	// 	problems = append(problems, "Cannot have more failover units than operational units")
+	// }
 
 	allKeysValid := true
 	for _, admin := range hc.Admins {
@@ -100,13 +100,13 @@ func checkInputs(hc HsmConfig) ([]string, error) {
 		if !validKey(admin) {
 			ssURL := os.Getenv("TKE_SIGNSERV_URL")
 			if ssURL != "" {
-				problems = append(problems, "The signature key associated with " +
-					admin.Name + " could not be accessed.  An attempt was made " +
-					"to use a signing service.  The signing service may not be " +
+				problems = append(problems, "The signature key associated with "+
+					admin.Name+" could not be accessed.  An attempt was made "+
+					"to use a signing service.  The signing service may not be "+
 					"running at the specified URL and port.")
 			} else {
-				problems = append(problems, "The signature key associated with " +
-					admin.Name + " could not be accessed.")
+				problems = append(problems, "The signature key associated with "+
+					admin.Name+" could not be accessed.")
 			}
 			allKeysValid = false
 		}
@@ -187,8 +187,8 @@ func internalCheckTransition(ci CommonInputs, hc HsmConfig,
 	for i := 0; i < len(hsminfo); i++ {
 
 		keepSKIs := make([]string, 0)
-		addSKIs  := make([]string, 0)
-		rmvSKIs  := make([]string, 0)
+		addSKIs := make([]string, 0)
+		rmvSKIs := make([]string, 0)
 
 		// What administrators do we want to keep or remove?
 		for j := 0; j < len(hsminfo[i].Admins); j++ {
@@ -214,8 +214,8 @@ func internalCheckTransition(ci CommonInputs, hc HsmConfig,
 		}
 
 		allKeepSKIs = append(allKeepSKIs, keepSKIs)
-		allAddSKIs  = append(allAddSKIs, addSKIs)
-		allRmvSKIs  = append(allRmvSKIs, rmvSKIs)
+		allAddSKIs = append(allAddSKIs, addSKIs)
+		allRmvSKIs = append(allRmvSKIs, rmvSKIs)
 
 		// Check whether the changes are possible
 		if len(keepSKIs) < hsminfo[i].SignatureThreshold {

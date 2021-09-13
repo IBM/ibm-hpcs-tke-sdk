@@ -14,6 +14,7 @@ package common
 import (
 	"errors"
 	"github.com/IBM/ibm-hpcs-tke-sdk/rest"
+	"strconv"
 )
 
 /*----------------------------------------------------------------------------*/
@@ -111,14 +112,7 @@ func CreateAssignHsmsHttpRequest(authToken string, urlStart string, crypto_insta
 /*----------------------------------------------------------------------------*/
 /* Creates the HTTP request for checking backup regions                       */
 /*----------------------------------------------------------------------------*/
-func CreateQueryBackupRegionsHttpRequest(context plugin.PluginContext, hsm_type string) (*rest.Request, error) {
-
-	authToken := context.IAMToken()
-
-	urlStart, err := mapAPIEndpoint(context)
-	if err != nil {
-		return nil, err
-	}
+func CreateQueryBackupRegionsHttpRequest(authToken string, urlStart string, hsm_type string) (*rest.Request, error) {
 	url := urlStart + "/v1/tke/availableBackupRegions?type=" + hsm_type
 	req := rest.GetRequest(url)
 	req.Set("Content-type", "application/json")

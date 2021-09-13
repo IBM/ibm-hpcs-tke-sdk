@@ -19,7 +19,7 @@
 package ep11cmds
 
 import (
-	"github.com/IBM-Cloud/tke/common"
+	"github.com/IBM/ibm-hpcs-tke-sdk/common"
 )
 
 /*----------------------------------------------------------------------------*/
@@ -36,11 +36,8 @@ import (
 /*----------------------------------------------------------------------------*/
 func RequestHSM(authToken string, urlStart string, crypto_instance_id string, number_of_hsms int, hsm_type string) bool {
 
-	req, err := common.CreateGetHsmsRequest(
+	req := common.CreateGetHsmsRequest(
 		authToken, urlStart, crypto_instance_id)
-	if err != nil {
-		return false
-	}
 
 	hsms, _, _, _, backup_region, err := common.SubmitQueryDomainsRequest(req)
 	if err != nil {
@@ -55,7 +52,7 @@ func RequestHSM(authToken string, urlStart string, crypto_instance_id string, nu
 
 	if backup_region == "" {
 		// Check available backup regions
-		req, err := common.CreateQueryBackupRegionsHttpRequest(context, hsm_type)
+		req, err := common.CreateQueryBackupRegionsHttpRequest(authToken, urlStart, hsm_type)
 		if err != nil {
 			return false
 		}

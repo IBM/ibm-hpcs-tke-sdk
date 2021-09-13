@@ -42,7 +42,7 @@ func getDomains(authToken string, urlStart string, cryptoInstance string) ([]com
 
 	// Determine what crypto units are assigned to the service instance
 	req := common.CreateGetHsmsRequest(authToken, urlStart, cryptoInstance)
-	hsm_ids, locations, serial_nums, hsm_types, err := common.SubmitQueryDomainsRequest(req)
+	hsm_ids, locations, serial_nums, hsm_types, _, err := common.SubmitQueryDomainsRequest(req)
 	if err != nil {
 		return domains, err
 	}
