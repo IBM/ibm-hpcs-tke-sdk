@@ -60,6 +60,30 @@ func Update(ci CommonInputs, hc HsmConfig) ([]string, error) {
 		return problems, nil
 	}
 
+	//--------------------------------------------------------------------------
+	// Update the failover hsms
+	//--------------------------------------------------------------------------
+	if hc.FailoverUnits > 0 {
+		// TODO: figure out what the hc.failoverUnits and ci.crypto_instance_id should be. I don't think they're correct
+		success := ep11cmds.RequestHSM(ci.AuthToken, urlStart, ci.InstanceId, hc.FailoverUnits, "failover")
+		if !success {
+			return make([]string, 0), errors.New("Failed to provision failover hsms")
+		}
+		// Read the updated configuration
+		hsminfo, _, domains, err = internalQuery(ci)
+		if err != nil {
+			return make([]string, 0), err
+		}
+		// Check for invalid transitions
+		problems, err, keepSKIs, addSKIs, rmvSKIs = internalCheckTransition(ci, hc, hsminfo)
+		if err != nil {
+			return make([]string, 0), err
+		}
+		if len(problems) > 0 {
+			return problems, nil
+		}
+	}
+
 	// Do a pre-emptive zeroize to work around an undesired consequence of
 	// an EP11 firmware update.
 	anyAdminsRemoved := false
@@ -540,9 +564,9 @@ func SetDomainAttributes(authToken string, urlStart string,
 
 	// Allow domains to be zeroized with a single signature
 	domainAttributes.Permissions |= 0x00000040
-		// May remove this in the future.  Bank of America was told the
-		// signature threshold value applies.  Should change TKE plug-in
-		// and HPCS Management Utilities at the same time.
+	// May remove this in the future.  Bank of America was told the
+	// signature threshold value applies.  Should change TKE plug-in
+	// and HPCS Management Utilities at the same time.
 
 	// Allow master key import
 	domainAttributes.Permissions |= 0x00000001

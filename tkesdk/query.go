@@ -55,16 +55,16 @@ type HsmInfo struct {
 type AdminInfo struct {
 	Name string
 	Key  string
-		// This identifies the administrator signature key to be used.
-		// For initial development, this will be the fully qualified path
-		// and file name of a signature key file.
-		// When user-defined signing services are supported, the signing
-		// service will define how this field is set.
+	// This identifies the administrator signature key to be used.
+	// For initial development, this will be the fully qualified path
+	// and file name of a signature key file.
+	// When user-defined signing services are supported, the signing
+	// service will define how this field is set.
 	Token string
-		// Credential giving access to the administrator signature key.
-		// For initial development, this will be the file password.
-		// When user-defined signing services are supported, the signing
-		// service will define how this field is set.
+	// Credential giving access to the administrator signature key.
+	// For initial development, this will be the file password.
+	// When user-defined signing services are supported, the signing
+	// service will define how this field is set.
 }
 
 // Structure representing the hsm_config section of a resource block
@@ -72,6 +72,7 @@ type HsmConfig struct {
 	SignatureThreshold  int
 	RevocationThreshold int
 	Admins              []AdminInfo
+	FailoverUnits       int
 }
 
 /*----------------------------------------------------------------------------*/

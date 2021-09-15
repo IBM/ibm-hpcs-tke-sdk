@@ -7,12 +7,14 @@
 //
 // Date          Initials        Description
 // 07/04/2021    CLH             Adapt for TKE SDK
+// 07/23/2021    CLH             Fix URL for private endpoints
 
 package common
 
 import (
 	"errors"
 	"github.com/IBM/ibm-hpcs-tke-sdk/rest"
+	"strconv"
 )
 
 /*----------------------------------------------------------------------------*/
@@ -28,10 +30,10 @@ func GetBaseURL(apiEndPoint string, region string) (string, error) {
 		return "https://tke." + region + ".hs-crypto.test.cloud.ibm.com", nil
 	} else if apiEndPoint == "private.cloud.ibm.com" ||
 		apiEndPoint == "https://private.cloud.ibm.com" {
-		return "https://tke." + region + ".hs-crypto.private.cloud.ibm.com", nil
+		return "https://tke.private." + region + ".hs-crypto.cloud.ibm.com", nil
 	} else if apiEndPoint == "private.test.cloud.ibm.com" ||
 		apiEndPoint == "https://private.test.cloud.ibm.com" {
-		return "https://tke." + region + ".hs-crypto.private.test.cloud.ibm.com", nil
+		return "https://tke.private." + region + ".hs-crypto.test.cloud.ibm.com", nil
 	} else {
 		return "", errors.New("Invalid API endpoint")
 	}
@@ -70,7 +72,7 @@ func CreatePostHsmsRequest(authToken string, urlStart string,
 /* return the public part of a signature key                                  */
 /*----------------------------------------------------------------------------*/
 func CreateGetPublicKeyRequest(sigkeyToken string, urlStart string,
-		sigkey string) *rest.Request {
+	sigkey string) *rest.Request {
 
 	url := urlStart + "/keys/" + sigkey
 	req := rest.GetRequest(url)
@@ -84,7 +86,7 @@ func CreateGetPublicKeyRequest(sigkeyToken string, urlStart string,
 /* sign data using a signature key                                            */
 /*----------------------------------------------------------------------------*/
 func CreateSignDataRequest(sigkeyToken string, urlStart string,
-		sigkey string, dataToSign string) *rest.Request {
+	sigkey string, dataToSign string) *rest.Request {
 
 	url := urlStart + "/sign/" + sigkey
 	req := rest.PostRequest(url)
@@ -92,4 +94,28 @@ func CreateSignDataRequest(sigkeyToken string, urlStart string,
 	req.Set("Authorization", sigkeyToken)
 	req.Body(`{"hash_algorithm":"sha2-512","input":"` + dataToSign + `"}`)
 	return req
+}
+
+/*----------------------------------------------------------------------------*/
+/* Creates the HTTP request for checking backup regions                       */
+/*----------------------------------------------------------------------------*/
+func CreateAssignHsmsHttpRequest(authToken string, urlStart string, crypto_instance_id string, backup_region string, number_of_hsms int, hsm_type string) (*rest.Request, error) {
+
+	url := urlStart + "/v1/tke/" + crypto_instance_id + "/hsmAssignment/" + backup_region + "?type=" + hsm_type
+	req := rest.PostRequest(url)
+	req.Set("Content-type", "application/json")
+	req.Set("Authorization", authToken)
+	req.Body(`{"numberOfHsmsRequested":` + strconv.Itoa(number_of_hsms) + `}`)
+	return req, nil
+}
+
+/*----------------------------------------------------------------------------*/
+/* Creates the HTTP request for checking backup regions                       */
+/*----------------------------------------------------------------------------*/
+func CreateQueryBackupRegionsHttpRequest(authToken string, urlStart string, hsm_type string) (*rest.Request, error) {
+	url := urlStart + "/v1/tke/availableBackupRegions?type=" + hsm_type
+	req := rest.GetRequest(url)
+	req.Set("Content-type", "application/json")
+	req.Set("Authorization", authToken)
+	return req, nil
 }

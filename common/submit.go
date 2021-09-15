@@ -12,6 +12,7 @@ package common
 
 import (
 	"errors"
+	"os"
 	"strconv"
 	"strings"
 
@@ -95,10 +96,11 @@ func SubmitHTPRequest(req *rest.Request) (htpResponse string, err error) {
 /* []string -- locations of the crypto modules for each domain                */
 /* []string -- serial numbers of the crypto modules for each domain           */
 /* []string -- hsm_types, "recovery" or "operational"                         */
+/* string -- backup_region, region where source and failover hsms come from   */
 /* error -- reports any errors for the operation                              */
 /*----------------------------------------------------------------------------*/
 func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
-	[]string, []string, error) {
+	[]string, []string, string, error) {
 
 	/*
 	 * The format of the response for a GET /hsms request is:
@@ -128,6 +130,16 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	 *          "serial_number: "string"
 	 *       }
 	 *    ]
+	 *    "failover_hsms": [
+	 *       {
+	 *          "hsm_id": "string",
+	 *          "location": "string",
+	 *          "state": "string",
+	 *          "version": int,
+	 *          "serial_number: "string"
+	 *       }
+	 *    ]
+	 *    "backup_region": "string"
 	 * }
 	 *
 	 * The original version of the GET /hsms request did not include a source_hsms
@@ -157,12 +169,12 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	if err != nil {
 		t1, ok := err.(*rest.ErrorResponse)
 		if ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nStatus code: " + strconv.Itoa(t1.StatusCode) +
 					"\n" + getMessageText(t1))
 		} else {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nMessage: " + err.Error())
 		}
@@ -177,7 +189,7 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	hsms := outmap["hsms"]
 	hsmsArray, ok := hsms.([]interface{})
 	if !ok {
-		return nil, nil, nil, nil, errors.New(
+		return nil, nil, nil, nil, "", errors.New(
 			"Error querying crypto units." +
 				"\nUnexpected hsms data, not an array.")
 	}
@@ -185,44 +197,44 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	for _, hsm := range hsmsArray {
 		hsmEntry, ok := hsm.(map[string]interface{})
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nUnexpected hsms entry.")
 		}
 
 		hsm_id := hsmEntry["hsm_id"]
 		if hsm_id == nil {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nhsm_id not found")
 		}
 		hsm_id_string, ok := hsm_id.(string)
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nhsm_id is not a string")
 		}
 		location := hsmEntry["location"]
 		if location == nil {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nlocation not found")
 		}
 		location_string, ok := location.(string)
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nlocation is not a string")
 		}
 		serial_num := hsmEntry["serial_number"]
 		if serial_num == nil {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nserial_number not found")
 		}
 		serial_num_string, ok := serial_num.(string)
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nserial_number is not a string")
 		}
@@ -242,7 +254,7 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	if source_hsms != nil {
 		sourceHsmsArray, ok := source_hsms.([]interface{})
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nUnexpected source_hsms data, not an array.")
 		}
@@ -250,44 +262,44 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 		for _, hsm := range sourceHsmsArray {
 			hsmEntry, ok := hsm.(map[string]interface{})
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nUnexpected source_hsms entry.")
 			}
 
 			hsm_id := hsmEntry["hsm_id"]
 			if hsm_id == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nhsm_id not found")
 			}
 			hsm_id_string, ok := hsm_id.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nhsm_id is not a string")
 			}
 			location := hsmEntry["location"]
 			if location == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nlocation not found")
 			}
 			location_string, ok := location.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nlocation is not a string")
 			}
 			serial_num := hsmEntry["serial_number"]
 			if serial_num == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nserial_number not found")
 			}
 			serial_num_string, ok := serial_num.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nserial_number is not a string")
 			}
@@ -302,54 +314,54 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 	// Process failover HSMs
 	failover_hsms := outmap["failover_hsms"]
 	if failover_hsms != nil {
-		sourceHsmsArray, ok := failover_hsms.([]interface{})
+		failoverHsmsArray, ok := failover_hsms.([]interface{})
 		if !ok {
-			return nil, nil, nil, nil, errors.New(
+			return nil, nil, nil, nil, "", errors.New(
 				"Error querying crypto units." +
 					"\nUnexpected failover_hsms data, not an array.")
 		}
 
-		for _, hsm := range sourceHsmsArray {
+		for _, hsm := range failoverHsmsArray {
 			hsmEntry, ok := hsm.(map[string]interface{})
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nUnexpected failover_hsms entry.")
 			}
 
 			hsm_id := hsmEntry["hsm_id"]
 			if hsm_id == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nhsm_id not found")
 			}
 			hsm_id_string, ok := hsm_id.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nhsm_id is not a string")
 			}
 			location := hsmEntry["location"]
 			if location == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nlocation not found")
 			}
 			location_string, ok := location.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nlocation is not a string")
 			}
 			serial_num := hsmEntry["serial_number"]
 			if serial_num == nil {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nserial_number not found")
 			}
 			serial_num_string, ok := serial_num.(string)
 			if !ok {
-				return nil, nil, nil, nil, errors.New(
+				return nil, nil, nil, nil, "", errors.New(
 					"Error querying crypto units." +
 						"\nserial_number is not a string")
 			}
@@ -361,7 +373,13 @@ func SubmitQueryDomainsRequest(req *rest.Request) ([]string, []string,
 		}
 	}
 
-	return hsm_ids, locations, serial_nums, hsm_types, nil
+	backup_region := ""
+	backup_region_json := outmap["backup_region"]
+	if backup_region_json != nil {
+		backup_region = backup_region_json.(string)
+	}
+
+	return hsm_ids, locations, serial_nums, hsm_types, backup_region, nil
 }
 
 /*----------------------------------------------------------------------------*/
@@ -581,3 +599,103 @@ func SubmitSignDataRequest(req *rest.Request) (string, error) {
 	return signature_string, nil
 }
 
+/*----------------------------------------------------------------------------*/
+/* Submits the GET and PUT /key_roll request for starting a key roll and      */
+/* checking the status of the key roll.                                       */
+/*                                                                            */
+/* Returns the HTPResponse string from the TKE catcher program.               */
+/*----------------------------------------------------------------------------*/
+func SubmitAvailableBackupRegionsRequest(req *rest.Request) (regions []string, err error) {
+	// Allocate outmap
+	var outmap = make(map[string]interface{})
+
+	// Create client with default TLS handshake timeout of 10 seconds
+	client := rest.NewClient()
+
+	_, err2 := client.Do(req, &outmap, nil)
+	if err2 != nil {
+		t1, ok := err2.(*rest.ErrorResponse)
+		if ok {
+			return nil, errors.New(
+				"Error querying service instances." +
+					"\nStatus code: " + strconv.Itoa(t1.StatusCode) +
+					"\n" + getMessageText(t1))
+		} else if strings.Contains(err.Error(), "no such host") {
+			targetURL := os.Getenv("TKE_PRIVATE_ADDR")
+			if targetURL == "" {
+				return nil, errors.New(
+					"Error querying service instances." +
+						"\nMessage: " + err.Error() +
+						"\n\nHyper Protect Crypto Services may not be available in " +
+						"the region you have selected." +
+						"\nCheck the REFERENCE section of the Hyper Protect Crypto " +
+						"Services online documentation to determine the regions and " +
+						"locations where the service is available.")
+			} else {
+				return nil, errors.New(
+					"Error querying service instances." +
+						"\nMessage: " + err.Error() +
+						"\n\nThe TKE_PRIVATE_ADDR environment variable was used to " +
+						"determine the target URL for sending requests to the IBM " +
+						"Cloud.  This URL is invalid.  Change or remove the " +
+						"TKE_PRIVATE_ADDR environment variable." +
+						"\n\nTKE_PRIVATE_ADDR = " + targetURL)
+			}
+		} else {
+			return nil, errors.New(
+				"Error querying service instances." +
+					"\nMessage: " + err.Error())
+		}
+	}
+
+	// Process the query output
+	regionsList := outmap["availableBackupRegions"]
+	regionsArray, ok := regionsList.([]interface{})
+	if !ok {
+		return nil, errors.New(
+			"Could not convert regions to array")
+	}
+	finalRegions := make([]string, len(regionsArray))
+	for i, region := range regionsArray {
+		strRegion, ok := region.(string)
+		if ok {
+			finalRegions[i] = strRegion
+		}
+	}
+	return finalRegions, nil
+}
+
+/*----------------------------------------------------------------------------*/
+/* Submits the POST /hsmAssignment request that creates source or failover    */
+/* HSMs in the specified region, and the current region                       */
+/*                                                                            */
+/*                                                                            */
+/* Input:                                                                     */
+/* *rest.Request -- the POST /hsmAssignment request to be sent.               */
+/*                                                                            */
+/* Outputs:                                                                   */
+/* bool -- true if success, false if failure                                  */
+/* error -- reports any errors for the operation                              */
+/*----------------------------------------------------------------------------*/
+func SubmitAssignHsmsRequest(req *rest.Request) (bool, error) {
+
+	// Create client with default TLS handshake timeout of 10 seconds
+	client := rest.NewClient()
+
+	_, err := client.Do(req, nil, nil)
+	if err != nil {
+		t1, ok := err.(*rest.ErrorResponse)
+		if ok {
+			return false, errors.New(
+				"Error querying crypto units." +
+					"\nStatus code: " + strconv.Itoa(t1.StatusCode) +
+					"\n" + getMessageText(t1))
+		} else {
+			return false, errors.New(
+				"Error querying crypto units." +
+					"\nMessage12345: " + err.Error())
+		}
+	}
+
+	return true, nil
+}
